@@ -1,11 +1,48 @@
 import time
+import papermill as pm
+import os
+
+from GenAI.GeminiTool import GeminiAnalyzer, DataValues
 
 class DataAnalysis:
 
-    def __init__(self, job):
+    def __init__(self, job): #Getting job object here 
         self.job = job
+        self.dv = DataValues(job)
+        self.geminitool = GeminiAnalyzer(self.dv, "../GenAI/Credentials.json")
+
+    def GOIT(self):
+        # Path to your IPython Notebook file
+        notebook_filename = '../GenAI/gemini_test.ipynb'
+
+        # Parameters to pass into the notebook
+        parameters = {
+            'param1': self.job.Rows
+            # Add more parameters as needed
+        }
+
+        print(os.getcwd())
+
+        # Execute the notebook with parameters
+        pm.execute_notebook(
+            notebook_filename,
+            'output_notebook.ipynb',
+            parameters=parameters
+        )
 
     def Execute(self):
-        print("This Jobs is your now")
-        time.sleep(1)
+        job = self.job
+        
+        print(job.Title, job.Database, job.Prompt, job.Columns, job.Rows)
+        # print("This Jobs is your now")
+        # time.sleep(1)
+        
+        self.geminitool.SetSafetySetting()
+        self.geminitool.CreateDictionary()
+        self.geminitool.ExtractColumns()
+        self.geminitool.ColumnsToWorkOn()
+
+        # self.GOIT()
+
         return "Working"
+    

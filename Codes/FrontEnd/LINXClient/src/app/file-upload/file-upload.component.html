@@ -1,0 +1,14 @@
+<div class="file-upload">
+    <input type="file" #fileInput (change)="onFileSelected($event)">
+    <label for="fileInput">
+      <span *ngIf="!selectedFile">Choose a file</span>
+      <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+    </label>
+
+    <br>
+
+    <input type="text" [(ngModel)]="inputText" placeholder="Enter some text">
+
+    <br>
+    <button (click)="onSubmit()">Submit</button>
+  </div>

@@ -14,16 +14,16 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have the 'LINX_Client' title`, () => {
+  it(`should have the 'LINXClient' title`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('LINX_Client');
+    expect(app.title).toEqual('LINXClient');
   });
 
   it('should render title', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, LINX_Client');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, LINXClient');
   });
 });

@@ -13,6 +13,8 @@ class Job:
         self.JobID = title
         self.Database = []
         self.Prompt = []
+        self.Columns = []
+        self.Rows = []
         self.Extension = []
         self.Response = []
         self.Images = []

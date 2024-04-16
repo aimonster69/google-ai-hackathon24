@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "LINX_Client": {
+    "LINXClient": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/linx-client",
+            "outputPath": "dist/linxclient",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -25,7 +25,7 @@
               "src/assets"
             ],
             "styles": [
-              "@angular/material/prebuilt-themes/pink-bluegrey.css",
+              "@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.css"
             ],
             "scripts": [],
@@ -63,10 +63,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "LINX_Client:build:production"
+              "buildTarget": "LINXClient:build:production"
             },
             "development": {
-              "buildTarget": "LINX_Client:build:development"
+              "buildTarget": "LINXClient:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -74,7 +74,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "LINX_Client:build"
+            "buildTarget": "LINXClient:build"
           }
         },
         "test": {
@@ -90,7 +90,7 @@
               "src/assets"
             ],
             "styles": [
-              "@angular/material/prebuilt-themes/pink-bluegrey.css",
+              "@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.css"
             ],
             "scripts": []
@@ -100,6 +100,6 @@
     }
   },
   "cli": {
-    "analytics": "7241d88c-53aa-4d37-a9c6-db8b2508952a"
+    "analytics": false
   }
 }
