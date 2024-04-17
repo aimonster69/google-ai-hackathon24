@@ -33,16 +33,22 @@ class DataAnalysis:
     def Execute(self):
         job = self.job
         
-        print(job.Title, job.Database, job.Prompt, job.Columns, job.Rows)
+        #print(job.Title, job.Database, job.Prompt, job.Columns, job.Rows)
         # print("This Jobs is your now")
         # time.sleep(1)
         
-        self.geminitool.SetSafetySetting()
         self.geminitool.CreateDictionary()
+        self.geminitool.SetSafetySetting()
         self.geminitool.ExtractColumns()
         self.geminitool.ColumnsToWorkOn()
+        self.geminitool.TemplateCheck()
+        self.geminitool.PreProcess()
+        self.geminitool.CheckProcessSteps()
+        self.geminitool.PerformStep()
+        code = self.geminitool.PerformAnalysis()
+        
 
         # self.GOIT()
 
-        return "Working"
+        return code
     

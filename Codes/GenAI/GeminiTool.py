@@ -12,6 +12,7 @@ import traceback
 import nltk
 from PIL import Image
 import time
+from itertools import permutations
 
 
 start = time.time()
@@ -52,7 +53,7 @@ class GeminiAnalyzer:
         creds = json.load(f)
         datavalues.gemini_token = creds['gemini_api']
 
-        print(datavalues.job.Rows[0])
+        #print(datavalues.job.Rows[0])
 
         data = json.loads(datavalues.job.Rows[0])
         datavalues.df = pd.json_normalize(data)
@@ -88,7 +89,6 @@ class GeminiAnalyzer:
                                         generation_config=generation_config,
                                         safety_settings=safety_settings)
         convo = self.dv.model.start_chat(history=[])
-        print(prompt)
         convo.send_message(prompt)
         return re.sub(r"\*\*([^*]+)\*\*", r"\1", convo.last.text)
     
@@ -119,7 +119,7 @@ class GeminiAnalyzer:
         response = self.generate_response(create_data_dict, 0, 'BLOCK_NONE')
         self.dv.datadictresponse = response
         resp = response.replace("```", "")
-        print(resp)
+        #print(resp)
         exec(resp)
 
     def SetSafetySetting(self):
@@ -141,9 +141,9 @@ class GeminiAnalyzer:
         threat_level = self.generate_response(identify_threat_level, temperature, 'BLOCK_NONE')
 
         if threat_level=='HIGH':
-            print('Taking user consent..')
+            #print('Taking user consent..')
             self.dv.safety_setting = 'BLOCK_NONE'
-        print('Safety setting has been set to: ', self.dv.safety_setting)
+        #print('Safety setting has been set to: ', self.dv.safety_setting)
 
     def ExtractColumns(self):
         self.dv.my_analysis = '''suggest me best possible analysis possible'''
@@ -163,11 +163,11 @@ class GeminiAnalyzer:
         Columns: Col 1, Col 2, Col 3 etc.
         '''
 
-        print("COLUMNS")
-        print(self.dv.data_dict)
+        #print("COLUMNS")
+        #print(self.dv.data_dict)
 
         self.dv.column_names = self.generate_response(identify_colums, 0, self.dv.safety_setting)
-        print(self.dv.column_names)
+        #print(self.dv.column_names)
 
 
     def ColumnsToWorkOn(self):
@@ -178,9 +178,9 @@ class GeminiAnalyzer:
         # Extract the text after "Columns:"
         columns_text = self.dv.column_names[columns_index + len("Columns:"):].strip()
 
-        # Print the extracted text
+        # #print the extracted text
         self.dv.columns = columns_text.split(', ')
-        print(self.dv.columns)
+        #print(self.dv.columns)
 
         self.dv.data = self.dv.df[self.dv.columns]
         self.dv.data.head()
@@ -189,11 +189,11 @@ class GeminiAnalyzer:
             if key in self.dv.columns:
                 self.dv.columns_intel+=f'{key}: {val}\n'
 
-        print(self.dv.columns_intel)
+        #print(self.dv.columns_intel)
 
 
     def TemplateCheck(self):
-        template_check = f'''
+        self.dv.template_check = f'''
         Top 5 rows: {self.dv.data.head()}
         Data: {self.dv.data.columns}
 
@@ -204,8 +204,9 @@ class GeminiAnalyzer:
         3. Don't write anything else just respond whether it is 'Text' or 'Numeric'
         '''
 
-        template_to_choose = self.generate_response(template_check, 0, self.dv.safety_setting)
-        template_to_choose
+        self.dv.template_to_choose = self.generate_response(self.dv.template_check, 0, self.dv.safety_setting)
+        self.dv.template_to_choose
+        #print(self.dv.template_to_choose)
 
 
     def drop_high_missing_columns(self, df, missing_threshold=25):
@@ -237,6 +238,7 @@ class GeminiAnalyzer:
     def PreProcess(self):
         # Prompt Template for numeric data - 
         if self.dv.template_to_choose=='Numeric':
+            #print("Working")
             self.dv.preprocessing_template = '''
             > Data Imputation:-
 
@@ -284,20 +286,149 @@ class GeminiAnalyzer:
             self.dv.preprocessing_steps = re.findall(pattern, self.dv.preprocessing_template)
             self.dv.prep_details = self.dv.preprocessing_template.split('>')[1:-1]
 
-            # Print the extracted text
-            print(self.dv.preprocessing_steps)
+            # #print the extracted text
+            #print(self.dv.preprocessing_steps)
+            #print(self.dv.prep_details)
+
+        if self.dv.template_to_choose=='Text':
+            # Prompt Template for Text data - 
+            self.dv.preprocessing_template = '''
+            > Data Cleaning:-
+
+                When to use: Should be performed to remove stop words or punctuation marks from text data.
+                For what type of data: This step is applicable to textual data.
+                
+                Actions:
+                Remove irrelevant information from text data, such as stop words or punctuation marks.
+
+            > Data Imputation:-
+
+                When to use: Data imputation is used to fill in missing values (e.g. Null, None or NaN) in the dataset. Impute mode for categorical and mean/median otherwise.
+                For what type of data: This step is applicable to numerical and categorical data. Text data cleaning techniques can sometimes address missing values, but imputation might be necessary in specific cases.
+
+            > Text Preprocessing:-
+
+                When to use: Text preprocessing involves cleaning and transforming textual data into a format suitable for analysis. 
+                Remember you need to do it only when the text is a sentence(s) and not for categorical data. Identify if the data is categorical or not.
+                For what type of data: This step is specific to textual data, such as natural language text.
+
+                Actions:
+                Lowercase all text
+                Apply stemming or lemmatization to reduce words to their root form (if applicable)
+
+            > Noise Reduction:-
+
+                When to use: Noise in the data can arise from various sources, such as measurement errors or data collection processes. Noise reduction techniques aim to remove or minimize the impact of noise on the dataset.
+                For what type of data: This step is applicable to numerical data, textual data, and categorical data.
+
+                Actions:
+                For numerical data, apply smoothing techniques such as moving averages or median filters.
+                For categorical data, grouping rare categories or merging similar categories can reduce noise.
+
+            > Feature Engineering:-
+
+                When to use: Feature engineering involves creating new features from existing ones or transforming existing features to improve the performance of machine learning models. For E.g. If a feature like date is involved and if the data is on a daily basis - aggregate it to weekly or monthly basis for better analysis unless not a stock price data.
+                For what type of data: This step is applicable to all types of data.
+                Remember: Do it only when it would help in the analysis.
+                For E.g 1 If column like date is involved then make sure the column has a consistent format i.e. "datetime format" - "YYYY-MM-DD" by all means!
+                For what type of data: This step is applicable to all types of data.
+
+                Actions:
+                Generate new features by combining existing ones, extracting useful information from text or categorical variables, or creating interaction terms.
+                Transform features using mathematical functions such as logarithms, square roots, or polynomial transformations to better capture non-linear relationships.
+                Apply techniques specific to text data, such as TF-IDF (Term Frequency-Inverse Document Frequency) to weight the importance of words.
+
+            > Data Normalization or Standardization:-
+
+                When to use: Normalization or standardization can be applied to scale numerical data to a standard range or distribution if required by the specific model being used. 
+                You shouldn't do it to columns that are ordinal in nature like rank, rating etc, educational level etc.
+                For what type of data: This step is applicable to numerical data and is optional depending on the model's requirements.
+
+                Actions:
+                Scale numerical features to a specific range (e.g., [0, 1]) using min-max scaling or standardize features to have a mean of 0 and standard deviation of 1 using z-score normalization.
+
+            > '''
+
+            pattern = r'> (.*?):-'
+            self.dv.preprocessing_steps = re.findall(pattern, self.dv.preprocessing_template)
+            self.dv.prep_details = self.dv.preprocessing_template.split('>')[1:-1]
+
+            # #print the extracted text
+            #print(self.dv.preprocessing_steps)
+
+    
+
+    def normalize_date_format(self, date_column):
+        # Define possible date formats
+        # Define the elements (year, month, day)
+        elements = ['%Y', '%m', '%d']
+
+        # Generate all permutations
+        perms = permutations(elements)
+
+        # Format permutations into strings
+        possible_formats = ['/'.join(perm) for perm in perms]
+
+        perms = permutations(elements)
+        additional_formats = ['-'.join(perm) for perm in perms]
+        possible_formats += additional_formats
+
+        # Initialize an empty list to store normalized dates
+        normalized_dates = []
+
+        # Iterate over each date in the date column
+        for date_str in date_column:
+            # Initialize a variable to store the normalized date
+            normalized_date = None
+            # Iterate over each possible date format
+            for date_format in possible_formats:
+                try:
+                    # Try to parse the date using the current format
+                    normalized_date = pd.to_datetime(date_str, format=date_format).strftime("%Y-%m-%d")
+                    # If parsing succeeds, break the loop
+                    break
+                except ValueError:
+                    # If parsing fails, continue to the next format
+                    continue
+            # If no valid format was found, append None to the list
+            if normalized_date is None:
+                normalized_dates.append(None)
+            else:
+                # Otherwise, append the normalized date to the list
+                normalized_dates.append(normalized_date)
+        
+        return normalized_dates
+
+    def SolveDateIssues(self):
+        fetch_column = f'''Refer columns info: {self.dv.columns_intel}
+        And tell which column refers to date.
+        Instructions: Don't generate anything else but the column name.
+
+        Expected output: if present then: Column name - else: '' '''
+
+        date_col = self.generate_response(fetch_column, 0, self.dv.safety_setting)
+
+        if date_col!= '':
+            # Assuming df is your DataFrame and 'date_column' is the name of your date column
+            self.dv.data[f'{date_col}'] = self.dv.normalize_date_format(self.dv.data[f'{date_col}'])
+            self.dv.data[f'{date_col}'] = pd.to_datetime(self.dv.data[f'{date_col}'])
+        self.dv.data.head()
 
     def CheckProcessSteps(self):
-        # Checking preprocessing steps
+        # Checking preprocessing 
+        data = self.dv.df
         temperature = 0
         self.dv.preprocessing_dict = {}
+        test_of_step = None
+        result = False
+        #print("BAB", self.dv.preprocessing_steps)
         for idx, step in enumerate(tqdm(self.dv.preprocessing_steps)):
             step_to_take = f'''
             Details -
             Analysis to perform: "{self.dv.my_analysis}"
             Based on the analysis identify if preprocessing "{step}" is required or not
             Columns: {self.dv.columns_intel}
-            Data dypes: {self.dv.data.dtypes}
+            Data types: {self.dv.data.dtypes}
             Description of data: {self.dv.data.describe()}
             Preprocessing Details: {self.dv.prep_details[idx]}
             Remember: Almost all the type of analysis include aggregation/grouping of data. Based on that identify whether {step} preprocessing step is necessary or not.
@@ -325,18 +456,23 @@ class GeminiAnalyzer:
 
             # Automated debugging
             while count<2:
+                result = False
                 try:
                         if count==0:
                             test_of_step = self.generate_response(step_to_take, temperature, self.dv.safety_setting)
                         test_of_step = test_of_step.replace('python', '')
                         test_of_step = test_of_step.replace('`', '')
-                        result = ''
+                        #print("TOS: ", test_of_step)
                         exec(test_of_step)
+                        #print("\nResult", result)
                         self.dv.preprocessing_dict[step] = result
                         break
                     
                 except Exception as e:
-                    print(e)
+                    #print(type(data))
+                    #print(test_of_step)
+                    #print("Error: ", e)
+                    
                     error_message = f'''
                     Code:
                     {test_of_step}
@@ -354,7 +490,7 @@ class GeminiAnalyzer:
                     test_of_step = self.generate_response(test_of_step, temperature, self.dv.safety_setting)
                     count+=1
 
-        self.dv.preprocessing_dict
+        #print(self.dv.preprocessing_dict)
 
     def PerformStep(self):
         # Performing only those preprocessing steps that are required
@@ -363,7 +499,11 @@ class GeminiAnalyzer:
         code_transcript = ''
         temperature = 0
         for key, val in tqdm(self.dv.preprocessing_dict.items()):
+            #print("ABC", key, val)
+            #print("AAA=>1", key)
             if val==True:
+                #print("ABC", key, val)
+                #print("AAA=>0", val)
                 write_code_for_prep_step = f'''
                 Details -
                     Analysis to perform: {self.dv.my_analysis}
@@ -406,9 +546,11 @@ class GeminiAnalyzer:
                             pass
                         prep_code_output = prep_code_output.replace('`','')
                         exec(prep_code_output)
+                        #print("COdE", prep_code_output)
                         break
                     
                     except Exception as e:
+                        #print("ERRROROM=>", e)
                         error_message = f'''
                         Code:
                         {write_code_for_prep_step}
@@ -426,12 +568,17 @@ class GeminiAnalyzer:
                         write_code_for_prep_step = write_code_for_prep_step.replace('python', '')
                         write_code_for_prep_step = write_code_for_prep_step.replace('`', '')
                         count+=1
+                        #print("COdE", write_code_for_prep_step)
                 
+                #print("1--->", prep_code_output)
                 self.dv.code_transcript+=prep_code_output+'\n-----------------------------------------\n'
+        
+        #print("CODE")
+        #print(self.dv.code_transcript)
 
 
     def PerformAnalysis(self):
-        import os
+        
         # Removing existing files:
         try:
             files = ['viz.png', 'viz.html', 'analysis_result.csv']
@@ -441,7 +588,7 @@ class GeminiAnalyzer:
             pass
 
         # Perform analysis - 
-        print(self.dv.my_analysis)
+        #print(self.dv.my_analysis)
         write_code_for_analysis = ''
         count, temperature = 0, 0.2
         while count<2:
@@ -493,7 +640,9 @@ class GeminiAnalyzer:
                 write_code_for_analysis = self.generate_response(error_message, 0.5, self.dv.safety_setting)
                 count+=1
                 
-            self.dv.code_transcript+=write_code_for_analysis+'\n-----------------------------------------\n'
+            #self.dv.code_transcript += write_code_for_analysis + '\n-----------------------------------------\n'
+            print(write_code_for_analysis)
+            return write_code_for_analysis
 
 
     def InsightTypeIdentification(self):
@@ -602,11 +751,11 @@ class GeminiAnalyzer:
                         '''
                     if count==0:
                         vis_code = self.generate_response(visualization_prompt, temperature, self.dv.safety_setting)
-                    print(1)
+                    #print(1)
                     vis_code = vis_code.replace('python', '')
                     vis_code = vis_code.replace('`', '')
                     exec(vis_code)
-                    print('executed')
+                    #print('executed')
                     break
 
                 except Exception as e:
@@ -632,7 +781,7 @@ class GeminiAnalyzer:
             if 'viz.png' in all_items:
                 img = Image.open('viz.png')
                 viz_insight = self.understand_image(img)
-                print(viz_insight)
+                #print(viz_insight)
             else:
                 pass
 
@@ -649,6 +798,6 @@ class GeminiAnalyzer:
                             4. Don't generate data/insights of your own at any cost.'''
 
             insights = self.generate_response(textual_insight, 0.5, self.dv.safety_setting)
-            print(insights)
+            #print(insights)
 
-        print('Execution Time: (in mins)',(time.time()-start)/60)
+        #print('Execution Time: (in mins)',(time.time()-start)/60)
