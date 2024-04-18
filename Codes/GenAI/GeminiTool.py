@@ -599,7 +599,7 @@ class GeminiAnalyzer:
 
                 Instructions:
                 1. Write a function in python to execute the task and call the function to execute the code - at all costs
-                2. Assume a dataframe with the name "data" already exists.
+                2. Assume a json data with the name "data" is input as a parameter and converted into a dataframe.
                 3. Dataframe df has the following columns: {self.dv.data.columns}. Use the column names for your refernece while generating the code.
                 4. Don't include the code to read the file. Write the code assuming the dataframe already exists.
                 5. Don't generate your own data. 
@@ -612,7 +612,7 @@ class GeminiAnalyzer:
                 Expected output:
                 def some_function_name():
                     # Some Logic
-
+k
                     return some_value
 
                 data = some_function_name()

@@ -52,8 +52,20 @@ function ProcessExcelFile(title, dataurl, prompt, columns, rows){
         if (xhr.status >= 200 && xhr.status < 300) {
             console.log("Result Out");
             // Request successful
-            const data = JSON.parse(xhr.response);
-            console.log(data);
+            const od = JSON.parse(xhr.response);
+            console.log(od.message[0].replace("`", "").replace("python", ""));
+
+            var pythonCode = od.message[0].replace("`", "").replace("python", "");
+            var data = rows;
+            var pythonOutput = '';
+            skulpt.configure({
+                output: function(text) {
+                    pythonOutput += text;
+                }
+            });
+            skulpt.run(pythonCode);
+            console.log("Python output:", pythonOutput);
+
         } else {
             // Request failed
             console.error('Request failed with status:', xhr.status);
