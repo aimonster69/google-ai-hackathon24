@@ -16,10 +16,7 @@ from PIL import Image
 import time
 from itertools import permutations
 
-# CONSTANTS
-start = time.time()
-
-# credentials
+# CONSTANTS - credentials
 f = open('credentials.json', 'r')
 creds = json.load(f)
 gemini_token = creds['gemini_api']
@@ -86,7 +83,6 @@ def create_data_dictionary(table_description, df):
     - dict: Data dictionary containing the description of the table, each column, and its data type.
     """
 
-    data_dict = {}
     # Prompts
     create_data_dict = f'''Table description: {table_description}
     Columns: {df.columns}
@@ -106,12 +102,18 @@ def create_data_dictionary(table_description, df):
                 'Name of the column 2': {'col_description':'description of column 2', 'data_type':'Data Type of the column 2'},
                 'Name of the column 3': {'col_description':'description of column 3', 'data_type':'Data Type of the column 3'}
             }
-    }'''
+    }
+    '''
 
-    create_data_dict+=output
+    create_data_dict += output
     response = generate_response(create_data_dict, 0, 'BLOCK_NONE')
-    exec(response)
-    return data_dict
+    response = response.replace('`', '')
+    # open('data_dictionary.txt','w+').write(response)
+    d, data_dict = {}, {}
+    d['data_dict'] = data_dict
+    exec(response, d)
+    # data_dict = open('data_dictionary.txt','r').read()
+    return d['data_dict']
 
 def dynamic_safety_setting(df):
     """
@@ -245,11 +247,7 @@ class FileHandler:
         """
         file_type = self.check_file_type()
         if file_type == 'csv':
-            # If the file is a CSV, fetch its content using requests
-            response = requests.get(self.url)
-            response.raise_for_status()  # Raise an exception if the request fails
-            content = response.content.decode('utf-8')  # Decode the content
-            df = pd.read_csv(BytesIO(content), encoding='unicode_escape')  # Read CSV from decoded content
+            df = pd.read_csv(self.url, encoding='unicode_escape')  # Read CSV from decoded content
         elif file_type == 'excel':
             # If the file is an Excel file, directly read it using pandas
             df = pd.read_excel(self.url)
@@ -350,11 +348,12 @@ class Analysis:
         columns = columns_text.split(', ')
         return columns
 
-    def pre_dataprep(self, data_dict, columns):
+    def pre_dataprep(self, columns):
         columns = self.identify_columns()
         self.data = self.df[columns]
         self.columns_intel = ''
-        for key, val in data_dict['columns'].items():
+        print(type(self.data_dict))
+        for key, val in self.data_dict['columns'].items():
             if key in columns:
                 self.columns_intel+=f'{key}: {val}\n'
 
@@ -366,10 +365,10 @@ class Analysis:
             And tell which column refers to date.
             Instructions: Don't generate anything else but the column name.
 
-            Expected output: if present then: Column name - else: '' '''
+            Expected output: if present then: Column name - else: not_found '''
 
         date_col = generate_response(fetch_column, 0, self.safety_setting)
-        if date_col!= '':
+        if date_col!= 'not_found':
             # Assuming df is your DataFrame and 'date_column' is the name of your date column
             self.data[f'{date_col}'] = normalize_date_format(self.data[f'{date_col}'])
             self.data[f'{date_col}'] = pd.to_datetime(self.data[f'{date_col}'])
@@ -549,9 +548,11 @@ class Analysis:
                             test_of_step = generate_response(step_to_take, temperature, self.safety_setting)
                         test_of_step = test_of_step.replace('python', '')
                         test_of_step = test_of_step.replace('`', '')
-                        result = ''
-                        exec(test_of_step)
-                        preprocessing_dict[step] = result
+                        d = {}
+                        d['test_of_step'] = test_of_step
+                        exec(test_of_step, d)
+                        preprocessing_dict[step] = d['test_of_step']
+                        self.data = data
                         break
                     
                 except Exception as e:
@@ -615,16 +616,19 @@ class Analysis:
                 data = some_function_name()
                 '''
                 count = 0
-
+                data = self.data
                 # Automated debugging
                 while count<2:
                     try:
                         if count==0:
                             prep_code_output = generate_response(write_code_for_prep_step, temperature, self.safety_setting)
-                        if count!=0:
-                            pass
                         prep_code_output = prep_code_output.replace('`','')
-                        exec(prep_code_output)
+                        prep_code_output = prep_code_output.replace('python','')
+                        d={}
+                        d['prep_code_output'] = prep_code_output
+                        d['data'] = data
+                        exec(prep_code_output, d)
+                        self.data = data
                         break
                     
                     except Exception as e:
@@ -641,7 +645,7 @@ class Analysis:
                         4. Follow these instructions by all means
                         '''
                         temperature += 0.2
-                        write_code_for_prep_step = generate_response(write_code_for_prep_step, temperature, self.safety_setting)
+                        write_code_for_prep_step = generate_response(error_message, temperature, self.safety_setting)
                         write_code_for_prep_step = write_code_for_prep_step.replace('python', '')
                         write_code_for_prep_step = write_code_for_prep_step.replace('`', '')
                         count+=1
@@ -672,7 +676,7 @@ class Analysis:
                 3. Dataframe df has the following columns: {self.data.columns}. Use the column names for your refernece while generating the code.
                 4. Don't include the code to read the file. Write the code assuming the dataframe already exists.
                 5. Don't generate your own data. 
-                6. First 5 rows of the dataframe you will work on: {self.data.head(5)}
+                6. First 5 rows of the dataframe you will work on: {self.data.head()}
                 7. Dataframe should have {self.data.columns} as its columns only.
                 8. Don't write code to train any machine learning model. Write code only to perform the analysis
                 9. Save the output of the analysis a csv file: 'analysis_result.csv' at all costs!
@@ -686,11 +690,16 @@ class Analysis:
 
                 data = some_function_name()
                 '''
+                data = self.data
                 if count==0:
                     write_code_for_analysis = generate_response(query, temperature, self.safety_setting)
                 write_code_for_analysis = write_code_for_analysis.replace('python', '')
                 write_code_for_analysis = write_code_for_analysis.replace('`','')
-                exec(write_code_for_analysis)
+                d = {}
+                d['write_code_for_analysis'] = write_code_for_analysis
+                d['data'] = data
+                exec(write_code_for_analysis, d)
+                self.data = data
                 break
             except Exception as e:
                 error_message = f'''
@@ -816,12 +825,18 @@ class GenerateInsights:
                         # calling the function by all means
                         name_of_visualization(some_parameters)
                         '''
+                    vis_code = ''
+                    data = self.data
                     if count==0:
                         vis_code = generate_response(visualization_prompt, temperature, self.safety_setting)
                     print(1)
                     vis_code = vis_code.replace('python', '')
                     vis_code = vis_code.replace('`', '')
-                    exec(vis_code)
+                    d = {}
+                    d['vis_code'] = vis_code
+                    d['data'] = data
+                    exec(vis_code, d)
+                    self.data = data
                     print('executed')
                     break
 
@@ -861,16 +876,19 @@ class VyuEngine:
         self.url = url
     
     def start_engine(self):
+        start = time.time()
         # Reading file
         file_handler = FileHandler(self.url)
         df = file_handler.read_file()
 
         # Creating data dictionary
-        table_description = input('Enter Table Description:')
+        table_description = input('Enter Table Description: ')
         data_dict = create_data_dictionary(table_description, df)
+        # print(data_dict)
 
         # Dynamic safety setting
         safety_setting = dynamic_safety_setting(df)
+        print()
 
         # Recommend Analysis
         click = False
@@ -880,12 +898,14 @@ class VyuEngine:
             print(list_of_analyses)
         
         # Initialising Analysis
-        my_analysis = input('Enter analysis to perform:')
+        my_analysis = input('Enter analysis to perform: ')
         anal_obj = Analysis(my_analysis, df, data_dict, safety_setting)
 
         # Pre data prep
         columns = anal_obj.identify_columns()
-        data, template_to_choose = anal_obj.pre_dataprep(data_dict, columns)
+        print(columns)
+        data, template_to_choose = anal_obj.pre_dataprep(columns)
+        print()
 
         # Identifying Preprocessing Steps
         preprocessing_steps = anal_obj.prep_template(template_to_choose)
@@ -897,4 +917,11 @@ class VyuEngine:
 
         # Generating Insights
         gen_insights = GenerateInsights(my_analysis, data, safety_setting, code_transcript)
-        code_transcript = gen_insights.generate_insights(self, table_description)
+        code_transcript = gen_insights.generate_insights(table_description)
+        print('Execution Time: (in mins)',(time.time()-start)/60)
+
+url = 'data/police_shooting/fatal_police_shooting.csv'
+vyu = VyuEngine(url)
+vyu.start_engine()
+# Fatal Police shooting data
+# Gender wise average age of people who were shot dead only
