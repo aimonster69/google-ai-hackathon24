@@ -925,7 +925,11 @@ class VyuEngine:
         gen_insights = GenerateInsights(my_analysis, data, analysis_file_name, safety_setting, code_transcript)
         code_transcript, image_name, insights = gen_insights.generate_insights(self.job.table_description)
         print('Execution Time: (in mins)',(time.time()-start)/60)
-        return analysis_file_name, image_name, insights
+        
+        self.job.output_csv = analysis_file_name
+        self.job.output_insights = insights
+        self.job.output_img = image_name
+        return self.job
 
 class Job:
     def __init__(self, input_prompt, data_url, table_description, output_data, output_csv, output_img):
@@ -940,13 +944,13 @@ data_url = 'data/police_shooting/fatal_police_shooting.csv'
 table_description = input('Table Description: ')
 input_prompt = input('Type your analysis here: ')
 
-output_data, output_csv, output_img = '', '', ''
-job = Job(input_prompt, data_url, table_description, output_data, output_csv, output_img)
+output_insights, output_csv, output_img = '', '', ''
+job = Job(input_prompt, data_url, table_description, output_insights, output_csv, output_img)
 
 vyu = VyuEngine(job)
-analysis_file_name, image_name, insights = vyu.start_engine()
-png_file = image_name+'.png'
-html_file = image_name+'.html'
+job = vyu.start_engine()
+png_file = job.output_img+'.png'
+html_file = job.output_img+'.html'
 
 # Fatal Police shooting data
 # Gender wise average age of people who were shot dead only
