@@ -523,7 +523,7 @@ class Analysis:
             Adhere to below instructions at all costs!
             Instructions -
             0. Consider the details shared above to make the rules for your preprocessing test if needed
-            1. Assume the dataframe "data" exists already
+            1. Assume the dataframe "self.data" exists already
             2. Do not read data from anywhere
             3. Write a simple error free code
             4. Write a function that performs the preprocessing test and returns the response of the function in 'True' or 'False'
@@ -537,7 +537,7 @@ class Analysis:
                 # Preprocessing logic
 
                 return True or False based on the logic
-            result = preprocessing_test(data)
+            result = preprocessing_test(self.data)
             '''
             count = 0
 
@@ -596,7 +596,7 @@ class Analysis:
                 Adhere to below instructions at all costs!
                 Instructions -
                 0. Consider the details shared above for rules of your preprocessing test if required
-                1. Assume the dataframe "data" exists already
+                1. Assume the dataframe "self.data" exists already
                 2. Do not read or generate data by yourself
                 3. Do not mention python language in your response
                 4. Write simple code that's easy to understand without any errors
@@ -613,7 +613,7 @@ class Analysis:
                     return some_value
                     
                 # Calling function
-                data = some_function_name()
+                self.data = some_function_name()
                 '''
                 count = 0
                 data = self.data
@@ -672,7 +672,7 @@ class Analysis:
 
                 Instructions:
                 1. Write a function in python to execute the task and call the function to execute the code - at all costs
-                2. Assume a dataframe with the name "data" already exists.
+                2. Assume a dataframe with the name "self.data" already exists.
                 3. Dataframe df has the following columns: {self.data.columns}. Use the column names for your refernece while generating the code.
                 4. Don't include the code to read the file. Write the code assuming the dataframe already exists.
                 5. Don't generate your own data. 
@@ -688,7 +688,7 @@ class Analysis:
 
                     return some_value
 
-                data = some_function_name()
+                self.data = some_function_name()
                 '''
                 data = self.data
                 if count==0:
