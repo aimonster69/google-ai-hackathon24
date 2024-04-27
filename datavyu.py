@@ -211,6 +211,9 @@ def normalize_date_format(date_column):
             normalized_dates.append(normalized_date)
     return normalized_dates
 
+def auto_debugger():
+    pass
+
 class FileHandler:
     def __init__(self, url):
         """
@@ -523,7 +526,7 @@ class Analysis:
             Adhere to below instructions at all costs!
             Instructions -
             0. Consider the details shared above to make the rules for your preprocessing test if needed
-            1. Assume the dataframe "data" exists already
+            1. Assume the dataframe "self.data" exists already
             2. Do not read data from anywhere
             3. Write a simple error free code
             4. Write a function that performs the preprocessing test and returns the response of the function in 'True' or 'False'
@@ -537,7 +540,7 @@ class Analysis:
                 # Preprocessing logic
 
                 return True or False based on the logic
-            result = preprocessing_test(data)
+            result = preprocessing_test(self.data)
             '''
             count = 0
 
@@ -596,7 +599,7 @@ class Analysis:
                 Adhere to below instructions at all costs!
                 Instructions -
                 0. Consider the details shared above for rules of your preprocessing test if required
-                1. Assume the dataframe "data" exists already
+                1. Assume the dataframe "self.data" exists already
                 2. Do not read or generate data by yourself
                 3. Do not mention python language in your response
                 4. Write simple code that's easy to understand without any errors
@@ -613,7 +616,7 @@ class Analysis:
                     return some_value
                     
                 # Calling function
-                data = some_function_name()
+                self.data = some_function_name()
                 '''
                 count = 0
                 data = self.data
@@ -672,15 +675,14 @@ class Analysis:
 
                 Instructions:
                 1. Write a function in python to execute the task and call the function to execute the code - at all costs
-                2. Assume a dataframe with the name "data" already exists.
+                2. Assume a dataframe with the name "self.data" already exists.
                 3. Dataframe df has the following columns: {self.data.columns}. Use the column names for your refernece while generating the code.
                 4. Don't include the code to read the file. Write the code assuming the dataframe already exists.
                 5. Don't generate your own data. 
                 6. First 5 rows of the dataframe you will work on: {self.data.head()}
                 7. Dataframe should have {self.data.columns} as its columns only.
                 8. Don't write code to train any machine learning model. Write code only to perform the analysis
-                9. Save the output of the analysis a csv file: 'analysis_result.csv' at all costs!
-                10. Write code only the way shown below.
+                9. Write code only the way shown below.
 
                 Expected output:
                 def some_function_name():
@@ -688,7 +690,7 @@ class Analysis:
 
                     return some_value
 
-                data = some_function_name()
+                self.data = some_function_name()
                 '''
                 data = self.data
                 if count==0:
@@ -721,16 +723,17 @@ class Analysis:
         return self.data, self.code_transcript
 
 class GenerateInsights:
-    def __init__(self, my_analysis, data, safety_setting, code_transcript) :
+    def __init__(self, my_analysis, data, analysis_file, safety_setting, code_transcript) :
         self.my_analysis = my_analysis
         self.data = data
+        self.analysis_file = analysis_file
         self.safety_setting = safety_setting
         self.code_transcript = code_transcript
     
     def insight_type_identification(self):
         # Insight type identification
 
-        self.analysis_output = open('analysis_result.csv').read()
+        self.analysis_output = open(self.analysis_file).read()
         insight_prompt = f'''
         Based on the Analysis Output shared below, tell what would be best way to represent the insights of the given analysis - Visualization or Text
         1. Choose Visualization when the number of fields/columns are less but more than one - and thus the chart formed would be readable to user.
@@ -768,6 +771,7 @@ class GenerateInsights:
         insight_choice = self.insight_type_identification()
         if insight_choice=='Visualization':
             count, temperature = 0, 0.2
+            image_name = str(pd.Timestamp.now()).replace(' ', '')
             # vis_code = ''
             while count<2:
                 try:
@@ -820,7 +824,7 @@ class GenerateInsights:
 
                             # Code to plot and show the chart
                             
-                            # Code to save the chart/figure with name "Viz.png" and "Viz.html"
+                            # Code to save the chart/figure with name "{image_name}.png" and "{image_name}.html"
                         
                         # calling the function by all means
                         name_of_visualization(some_parameters)
@@ -869,20 +873,20 @@ class GenerateInsights:
 
             insights = generate_response(textual_insight, 0.5, self.safety_setting)
             print(insights)
-        return self.code_transcript
+        return self.code_transcript, image_name, insights
 
 class VyuEngine:
-    def __init__(self, url):
-        self.url = url
+    def __init__(self, job):
+        self.job = job
     
     def start_engine(self):
         start = time.time()
         # Reading file
-        file_handler = FileHandler(self.url)
+        file_handler = FileHandler(self.job.data_url)
         df = file_handler.read_file()
 
         # Creating data dictionary
-        table_description = input('Enter Table Description: ')
+        table_description = self.job.table_description
         data_dict = create_data_dictionary(table_description, df)
         # print(data_dict)
 
@@ -898,7 +902,7 @@ class VyuEngine:
             print(list_of_analyses)
         
         # Initialising Analysis
-        my_analysis = input('Enter analysis to perform: ')
+        my_analysis = self.job.input_prompt
         anal_obj = Analysis(my_analysis, df, data_dict, safety_setting)
 
         # Pre data prep
@@ -914,14 +918,39 @@ class VyuEngine:
         # Performing Preprocessing and Analysis
         data = anal_obj.perform_preprocessing(preprocessing_dict)
         data, code_transcript = anal_obj.perform_analysis()
+        analysis_file_name = str(pd.Timestamp.now()).replace(' ', '')+'.csv'
+        data.to_csv(analysis_file_name, index=False)
 
         # Generating Insights
-        gen_insights = GenerateInsights(my_analysis, data, safety_setting, code_transcript)
-        code_transcript = gen_insights.generate_insights(table_description)
+        gen_insights = GenerateInsights(my_analysis, data, analysis_file_name, safety_setting, code_transcript)
+        code_transcript, image_name, insights = gen_insights.generate_insights(self.job.table_description)
         print('Execution Time: (in mins)',(time.time()-start)/60)
+        
+        self.job.output_csv = analysis_file_name
+        self.job.output_insights = insights
+        self.job.output_img = image_name
+        return self.job
 
-url = 'data/police_shooting/fatal_police_shooting.csv'
-vyu = VyuEngine(url)
-vyu.start_engine()
+class Job:
+    def __init__(self, input_prompt, data_url, table_description, output_data, output_csv, output_img):
+        self.input_prompt = input_prompt
+        self.data_url =data_url
+        self.table_description = table_description
+        self.output_data =output_data
+        self.output_csv = output_csv
+        self.output_img = output_img
+
+data_url = 'data/police_shooting/fatal_police_shooting.csv'
+table_description = input('Table Description: ')
+input_prompt = input('Type your analysis here: ')
+
+output_insights, output_csv, output_img = '', '', ''
+job = Job(input_prompt, data_url, table_description, output_insights, output_csv, output_img)
+
+vyu = VyuEngine(job)
+job = vyu.start_engine()
+png_file = job.output_img+'.png'
+html_file = job.output_img+'.html'
+
 # Fatal Police shooting data
 # Gender wise average age of people who were shot dead only
