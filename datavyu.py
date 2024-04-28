@@ -125,23 +125,25 @@ def dynamic_safety_setting(df):
     Returns:
     - str: String containing safety setting
     """
-    safety_setting = 'BLOCK_MEDIUM_AND_ABOVE'
+    safety_setting = 'BLOCK_ONLY_HIGH'
     temperature = 0
     identify_threat_level = f'''
+    Role: You are Gemini and a very helpful assisstant.
 
-    Role: You are Gemini
-
-    Action: Based on harm categories identify the level of threat as: LOW, MEDIUM or HIGH
+    Action: Based on harm categories identify the level of threat as: LOW or HIGH
+    Table: {table_description}
     Data: {df.head()}
-    Harm categories: HARM_CATEGORY_HARASSMENT, HARM_CATEGORY_SEXUALLY_EXPLICIT, HARM_CATEGORY_HATE_SPEECH, HARM_CATEGORY_DANGEROUS_CONTENT
+    Harm categories: HARM_CATEGORY_HARASSMENT, HARM_CATEGORY_SEXUALLY_EXPLICIT, HARM_CATEGORY_HATE_SPEECH, HARM_CATEGORY_DANGEROUS_CONTENT.
 
     Instructions:
-    1. Restrict your response to only LOW, MEDIUM or HIGH at all costs
+    1. Restrict your response to only LOW or HIGH at all costs
+    2. If any of the Harm category is found then return HIGH at all costs!
+    3. Don't include any other text. 
 
     Expected output format: LOW or HIGH etc.'''
 
     threat_level = generate_response(identify_threat_level, temperature, 'BLOCK_NONE')
-
+    print(threat_level)
     if threat_level=='HIGH':
         print('Taking user consent..')
         safety_setting = 'BLOCK_NONE'
@@ -355,7 +357,7 @@ class Analysis:
         columns = self.identify_columns()
         self.data = self.df[columns]
         self.columns_intel = ''
-        print(type(self.data_dict))
+        # print(type(self.data_dict))
         for key, val in self.data_dict['columns'].items():
             if key in columns:
                 self.columns_intel+=f'{key}: {val}\n'
@@ -656,25 +658,26 @@ class Analysis:
         return self.data
     
     def perform_analysis(self):
-        try:
-            files = ['viz.png', 'viz.html', 'analysis_result.csv']
-            for file in files:
-                os.remove(file)
-        except:
-            pass
+        # try:
+        #     files = ['viz.png', 'viz.html', 'analysis_result.csv']
+        #     for file in files:
+        #         os.remove(file)
+        # except:
+        #     pass
 
         # Perform analysis - 
         print(self.my_analysis)
         write_code_for_analysis = ''
-        count, temperature = 0, 0.2
+        count, temperature = 0, 0.5
         while count<2:
             try:
                 query = f'''
-                Task: {self.my_analysis}
-                Remember: Analysis is always some type of aggregation or group of certain columns to get the desired result.
+                Analysis to perform: {self.my_analysis}
+                Remember: Analysis is always some type of aggregation or grouping of certain columns to get the desired result. So perform aggregation/grouping
+                at all costs!.
 
                 Instructions:
-                1. Write a function in python to execute the task and call the function to execute the code - at all costs
+                1. Write code in python to execute the analysis - at all costs
                 2. Assume a dataframe with the name "self.data" already exists.
                 3. Dataframe df has the following columns: {self.data.columns}. Use the column names for your refernece while generating the code.
                 4. Don't include the code to read the file. Write the code assuming the dataframe already exists.
@@ -682,15 +685,17 @@ class Analysis:
                 6. First 5 rows of the dataframe you will work on: {self.data.head()}
                 7. Dataframe should have {self.data.columns} as its columns only.
                 8. Don't write code to train any machine learning model. Write code only to perform the analysis
-                9. Write code only the way shown below.
+                9. Aggregate/Group the dataframe "self.data" to get the desired result for Analysis by all means!
+                10. Write code only the way shown below.
 
                 Expected output:
-                def some_function_name():
+                def analysis(self.data):
                     # Some Logic
 
                     return some_value
 
-                self.data = some_function_name()
+                # Calling the function
+                self.data = analysis(self.data)
                 '''
                 data = self.data
                 if count==0:
@@ -699,8 +704,9 @@ class Analysis:
                 write_code_for_analysis = write_code_for_analysis.replace('`','')
                 d = {}
                 d['write_code_for_analysis'] = write_code_for_analysis
-                d['data'] = data
+                d['self.data'] = self.data
                 exec(write_code_for_analysis, d)
+                self.data = analysis(self.data)
                 self.data = data
                 break
             except Exception as e:
@@ -720,6 +726,7 @@ class Analysis:
                 write_code_for_analysis = generate_response(error_message, 0.5, self.safety_setting)
                 count+=1
             self.code_transcript+=write_code_for_analysis+'\n-----------------------------------------\n'
+        print(self.code_transcript)
         return self.data, self.code_transcript
 
 class GenerateInsights:
@@ -743,7 +750,8 @@ class GenerateInsights:
         Analysis wanted: {self.my_analysis}
         Analysis Output: {self.analysis_output}
         '''
-
+        print(self.safety_setting)
+        # print(insight_prompt)
         insight_choice = generate_response(insight_prompt, 0.2, self.safety_setting)
         return insight_choice
 
@@ -771,7 +779,6 @@ class GenerateInsights:
         insight_choice = self.insight_type_identification()
         if insight_choice=='Visualization':
             count, temperature = 0, 0.2
-            image_name = str(pd.Timestamp.now()).replace(' ', '')
             # vis_code = ''
             while count<2:
                 try:
@@ -809,10 +816,10 @@ class GenerateInsights:
                         Instructions -
                         0. Based on the info available above identify what type of chart would suit the best to convey the insights for "{self.my_analysis}" - consider readability of the chart as well.
                         1. Write code in python to perform an insightful visualization from the output shared to plot it - call the function at costs. Don't write any other text. Just code.
-                        2. Make a new dataframe which has the following data: {self.analysis_output} and columns: {self.data.columns} from 'analysis_result.csv'
-                        3. Don't generate your own data. Don't equate visualization with "data" variable at any cost.
+                        2. Make a new dataframe which has the following data: {self.analysis_output} and columns: {self.data.columns} from '{self.analysis_file}.json'
+                        3. Don't generate your own data. Don't equate visualization with "self.data" variable at any cost.
                         4. Visualization should have title, axis labels, legend etc.
-                        5. Save the visualization with the name 'viz.png' and 'viz.html' as well at all costs in the function itself.
+                        5. Save the visualization with the name '{self.analysis_file}.png' and '{self.analysis_file}.html' as well at all costs in the function itself.
                         6. Always show x axis labels with a rotation of 90 degrees if the number of labels are more than 8
                         7. If the chart can be built using Seaborn, Geopandas or Plotly then use it
                         8. Refer Code trascript: {self.code_transcript} to write an error free code.
@@ -824,7 +831,7 @@ class GenerateInsights:
 
                             # Code to plot and show the chart
                             
-                            # Code to save the chart/figure with name "{image_name}.png" and "{image_name}.html"
+                            # Code to save the chart/figure with name "{self.analysis_file}.png" and "{self.analysis_file}.html"
                         
                         # calling the function by all means
                         name_of_visualization(some_parameters)
@@ -859,6 +866,10 @@ class GenerateInsights:
                     temperature += 0.2
                     vis_code = generate_response(error_message, temperature, self.safety_setting)
                 count+=1
+            print(self.code_transcript)
+            img = Image.open(f'{image_name}.png')
+            insights = self.understand_image(img)
+            print(insights)
             self.code_transcript += vis_code+'\n-----------------------------------------\n'
 
         if insight_choice=='Text':
@@ -918,8 +929,8 @@ class VyuEngine:
         # Performing Preprocessing and Analysis
         data = anal_obj.perform_preprocessing(preprocessing_dict)
         data, code_transcript = anal_obj.perform_analysis()
-        analysis_file_name = str(pd.Timestamp.now()).replace(' ', '')+'.csv'
-        data.to_csv(analysis_file_name, index=False)
+        analysis_file_name = str(pd.Timestamp.now()).replace(' ', '')+'.json'
+        data.to_json(analysis_file_name, index=False)
 
         # Generating Insights
         gen_insights = GenerateInsights(my_analysis, data, analysis_file_name, safety_setting, code_transcript)
@@ -932,11 +943,11 @@ class VyuEngine:
         return self.job
 
 class Job:
-    def __init__(self, input_prompt, data_url, table_description, output_data, output_csv, output_img):
+    def __init__(self, input_prompt, data_url, table_description, output_insights, output_csv, output_img):
         self.input_prompt = input_prompt
         self.data_url =data_url
         self.table_description = table_description
-        self.output_data =output_data
+        self.output_insights =output_insights
         self.output_csv = output_csv
         self.output_img = output_img
 
@@ -949,8 +960,9 @@ job = Job(input_prompt, data_url, table_description, output_insights, output_csv
 
 vyu = VyuEngine(job)
 job = vyu.start_engine()
+print(job.output_img)
 png_file = job.output_img+'.png'
 html_file = job.output_img+'.html'
 
 # Fatal Police shooting data
-# Gender wise average age of people who were shot dead only
+# How many incidents in the city of Evans? 
