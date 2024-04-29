@@ -894,7 +894,7 @@ class VyuEngine:
         data = anal_obj.perform_preprocessing(preprocessing_dict)
         data, code_transcript = anal_obj.perform_analysis()
         analysis_file_name = str(pd.Timestamp.now()).replace(' ', '')+'.json'
-        data.to_json(analysis_file_name, index=False)
+        data.to_json(analysis_file_name, orient="table")
 
         # Generating Insights
         gen_insights = GenerateInsights(my_analysis, data, analysis_file_name, safety_setting, code_transcript)
