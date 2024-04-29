@@ -554,10 +554,10 @@ class Analysis:
                 # Preprocessing logic
 
                 return True or False based on the logic
-            result = preprocessing_test(self.data)
+            result = preprocessing_test(data)
             '''
             count = 0
-
+            data = self.data
             # Automated debugging
             while count<2:
                 try:
@@ -567,16 +567,18 @@ class Analysis:
                     test_of_step = test_of_step.replace('`', '')
                     d = {}
                     d['test_of_step'] = test_of_step
+                    d['data'] = data
+                    # print(test_of_step)
                     exec(test_of_step, d)
                     preprocessing_dict[step] = d['test_of_step']
-                    self.data = data
+                    # self.data = data
                     break
                     
                 except Exception as e:
                     temperature += 0.2
                     test_of_step = auto_debugger(test_of_step, temperature, self.safety_setting)
                     count+=1
-        self.data = data
+        # self.data = data
         return self.data, preprocessing_dict
     
     def perform_preprocessing(self, preprocessing_dict):
@@ -644,7 +646,7 @@ class Analysis:
     def perform_analysis(self):
 
         # Perform analysis - 
-        print(self.my_analysis)
+        # print(self.my_analysis)
         write_code_for_analysis = ''
         count, temperature = 0, 0
         while count<2:
@@ -667,13 +669,13 @@ class Analysis:
                 10. Write code only the way shown below. And call the function analysis() by all means!
 
                 Expected output - I need output in the similar fashion only!
-                def self.analysis(self.data):
+                def analysis(data):
                     # Some Logic
 
                     return some_value
 
                 # Calling the function
-                self.data = self.analysis(self.data)
+                data = analysis(data)
                 '''
                 data = self.data
                 if count==0:
@@ -682,15 +684,14 @@ class Analysis:
                 write_code_for_analysis = write_code_for_analysis.replace('`','')
                 d = {}
                 if 'data = analysis(data)' not in write_code_for_analysis:
-                    function_call = '\nself.data = analysis(self.data)'
+                    function_call = '\ndata = analysis(data)'
                     write_code_for_analysis += write_code_for_analysis+function_call
-                print(write_code_for_analysis)
+                # print(write_code_for_analysis)
                 d['write_code_for_analysis'] = write_code_for_analysis
-                d['self.data'] = self.data
-                # d['analysis(data)'] = analysis(data)
+                d['data'] = data
                 exec(write_code_for_analysis, d)
                 # self.data = analysis(self.data)
-                self.data = data
+                self.data = d['data']
                 break
             except Exception as e:
                 temperature += 0.2
@@ -698,7 +699,8 @@ class Analysis:
                 count+=1
 
             self.code_transcript+=write_code_for_analysis+'\n-----------------------------------------\n'
-        print(self.code_transcript)
+        # print(self.code_transcript)
+        print(d['data'])
         return self.data, self.code_transcript
 
 class GenerateInsights:
@@ -893,7 +895,7 @@ class VyuEngine:
         data.to_json(analysis_file_name, orient="index")
 
         # Generating Insights
-        with open(f'{analysis_file_name}.json', 'r') as f:
+        with open(f'{analysis_file_name}', 'r') as f:
             data = json.load(f)
         gen_insights = GenerateInsights(my_analysis, data, analysis_file_name, safety_setting, code_transcript)
         code_transcript, image_name, insights = gen_insights.generate_insights(self.job.table_description)
