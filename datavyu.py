@@ -714,7 +714,7 @@ class GenerateInsights:
     def insight_type_identification(self):
         # Insight type identification
 
-        self.analysis_output = open(self.analysis_file).read()
+        self.analysis_output = open(self.analysis_file+'.json').read()
         insight_prompt = f'''
         Based on the Analysis Output shared below, tell what would be best way to represent the insights of the given analysis - Visualization or Text
         1. Choose Visualization when the number of fields/columns are less but more than one - and thus the chart formed would be readable to user.
@@ -742,7 +742,7 @@ class GenerateInsights:
             
             Instructions:
             1. Make sure above conditions are met.
-            2. Do not include anything else in your response. 
+            2. Do not include any irrelevant insight/text in your response. 
             3. Be concise, crisp and concrete. Write insights creatively. Each new insight shouldn't start the same way. Make every insight's beginning look unique.
             4. Refer output analysis to generate actionable insights based on the analysis asked and give business related suggestion if asked.
         '''
@@ -820,8 +820,8 @@ class GenerateInsights:
                     d['vis_code'] = vis_code
                     d['data'] = data
                     exec(vis_code, d)
-                    self.data = data
-                    print('executed')
+                    self.data = d['data']
+                    print('Executed')
                     break
 
                 except Exception as e:
@@ -832,17 +832,18 @@ class GenerateInsights:
             img = Image.open(f'{self.analysis_file}.png')
             insights = self.understand_image(img)
             print(insights)
-            self.code_transcript += vis_code+'\n-----------------------------------------\n'
+            self.code_transcript += d['vis_code']+'\n-----------------------------------------\n'
 
         if insight_choice=='Text':
             textual_insight = f'''
                                 Action: Read the analysis output of {self.my_analysis} carefully: {self.analysis_output}
 
                                 Instructions:
-                                1. Share the results and give concrete and crisp actionable or interesting insights from it - if there are any.
+                                1. Share the results and give concrete and crisp actionable or interesting insights based on the analysis output - if there are any.
                                 2. Tone: Professional
                                 3. Talk always in terms of numbers/figures or percentages
-                                4. Don't generate data/insights of your own at any cost.'''
+                                4. Don't generate data/insights of your own at any cost.
+                                5. Provide only the insights that are required.'''
 
             insights = generate_response(textual_insight, 0.5, self.safety_setting)
             print(insights)
@@ -891,12 +892,12 @@ class VyuEngine:
         # Performing Preprocessing and Analysis
         data = anal_obj.perform_preprocessing(preprocessing_dict)
         data, code_transcript = anal_obj.perform_analysis()
-        analysis_file_name = str(pd.Timestamp.now()).replace(' ', '')+'.json'
-        data.to_json(analysis_file_name, orient="index")
+        analysis_file_name = str(pd.Timestamp.now()).replace(' ', '')
+        data.to_json(analysis_file_name+'.json', orient="index")
 
         # Generating Insights
-        with open(f'{analysis_file_name}', 'r') as f:
-            data = json.load(f)
+        # with open(f'{analysis_file_name}', 'r') as f:
+        #     data = json.load(f)
         gen_insights = GenerateInsights(my_analysis, data, analysis_file_name, safety_setting, code_transcript)
         code_transcript, image_name, insights = gen_insights.generate_insights(self.job.table_description)
         print('Execution Time: (in mins)',(time.time()-start)/60)
@@ -927,7 +928,6 @@ png_file = job.output_file_name+'.png'
 html_file = job.output_file_name+'.html'
 # os.delete(f'{job.output_file_name}.json')
 
-
 # Fatal Police shooting data
-# How many incidents in the city of Evans? 
+# How many incidents in the city of Evans?
 # Top 3 cities with most scenes of fatal incidents
