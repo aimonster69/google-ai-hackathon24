@@ -213,9 +213,21 @@ def normalize_date_format(date_column):
             normalized_dates.append(normalized_date)
     return normalized_dates
 
-def auto_debugger():
-    pass
+def auto_debugger(prompt, temperature, safety_setting):
+    error_message = f'''
+        You are an expert coder! Debug the below code for me.
+        Code: {prompt}
+        Traceback of the code: {traceback.format_exc()}
 
+        Adhere to below instructions at all costs!
+        Instruction:
+        1. Identify the cause of the error and rewrite the code - make it error free
+        2. Don't include any text in your response
+        3. Rewrite the code as a function
+        4. Follow these instructions by all means
+        '''
+    debugged_code = generate_response(error_message, temperature, safety_setting)
+    return debugged_code
 class FileHandler:
     def __init__(self, url):
         """
@@ -549,34 +561,20 @@ class Analysis:
             # Automated debugging
             while count<2:
                 try:
-                        if count==0:
-                            test_of_step = generate_response(step_to_take, temperature, self.safety_setting)
-                        test_of_step = test_of_step.replace('python', '')
-                        test_of_step = test_of_step.replace('`', '')
-                        d = {}
-                        d['test_of_step'] = test_of_step
-                        exec(test_of_step, d)
-                        preprocessing_dict[step] = d['test_of_step']
-                        self.data = data
-                        break
+                    if count==0:
+                        test_of_step = generate_response(step_to_take, temperature, self.safety_setting)
+                    test_of_step = test_of_step.replace('python', '')
+                    test_of_step = test_of_step.replace('`', '')
+                    d = {}
+                    d['test_of_step'] = test_of_step
+                    exec(test_of_step, d)
+                    preprocessing_dict[step] = d['test_of_step']
+                    self.data = data
+                    break
                     
                 except Exception as e:
-                    print(e)
-                    error_message = f'''
-                    Code:
-                    {test_of_step}
-                    Traceback of the code: {traceback.format_exc()}
-
-                    Adhere to below instructions at all costs!
-                    Instruction:
-                    1. Identify the cause of the error and rewrite the code - make it error free
-                    2. Don't include any text in your response
-                    3. Rewrite the code as a function
-                    4. Follow these instructions by all means
-                    '''
-                    
                     temperature += 0.2
-                    test_of_step = generate_response(error_message, temperature, self.safety_setting)
+                    test_of_step = auto_debugger(test_of_step, temperature, self.safety_setting)
                     count+=1
         self.data = data
         return self.data, preprocessing_dict
@@ -637,22 +635,8 @@ class Analysis:
                         break
                     
                     except Exception as e:
-                        error_message = f'''
-                        Code:
-                        {write_code_for_prep_step}
-                        Traceback of the code: {traceback.format_exc()}
-
-                        Adhere to below instructions at all costs!
-                        Instruction:
-                        1. Identify the cause of the error and rewrite the code - make it error free
-                        2. Don't include any text in your response
-                        3. Rewrite the code as a function
-                        4. Follow these instructions by all means
-                        '''
                         temperature += 0.2
-                        write_code_for_prep_step = generate_response(error_message, temperature, self.safety_setting)
-                        write_code_for_prep_step = write_code_for_prep_step.replace('python', '')
-                        write_code_for_prep_step = write_code_for_prep_step.replace('`', '')
+                        prep_code_output = auto_debugger(prep_code_output, temperature, self.safety_setting)
                         count+=1
                 self.code_transcript+=prep_code_output+'\n-----------------------------------------\n'
         return self.data
@@ -686,7 +670,7 @@ class Analysis:
                 7. Dataframe should have {self.data.columns} as its columns only.
                 8. Don't write code to train any machine learning model. Write code only to perform the analysis
                 9. Aggregate/Group the dataframe "self.data" to get the desired result for Analysis by all means!
-                10. Write code only the way shown below.
+                10. Write code only the way shown below. And call the damn function analysis()
 
                 Expected output:
                 def analysis(self.data):
@@ -695,7 +679,7 @@ class Analysis:
                     return some_value
 
                 # Calling the function
-                self.data = analysis(self.data)
+                data = analysis(data)
                 '''
                 data = self.data
                 if count==0:
@@ -703,28 +687,20 @@ class Analysis:
                 write_code_for_analysis = write_code_for_analysis.replace('python', '')
                 write_code_for_analysis = write_code_for_analysis.replace('`','')
                 d = {}
+                if 'data = analysis(data)' not in write_code_for_analysis:
+                    function_call = '\ndata = analysis(data)'
+                    write_code_for_analysis += write_code_for_analysis+function_call
                 d['write_code_for_analysis'] = write_code_for_analysis
-                d['self.data'] = self.data
+                d['data'] = data
                 exec(write_code_for_analysis, d)
-                self.data = analysis(self.data)
+                # self.data = analysis(self.data)
                 self.data = data
                 break
             except Exception as e:
-                error_message = f'''
-                    Code:
-                    {write_code_for_analysis}
-                    Traceback of the code: {traceback.format_exc()}
-
-                    Adhere to below instructions at all costs!
-                    Instruction:
-                    1. Identify the cause of the error and rewrite the code - make it error free
-                    2. Don't include any text in your response
-                    3. Rewrite the code as a function
-                    4. Follow these instructions by all means
-                    '''
                 temperature += 0.2
-                write_code_for_analysis = generate_response(error_message, 0.5, self.safety_setting)
+                write_code_for_analysis = auto_debugger(write_code_for_analysis, temperature, self.safety_setting)
                 count+=1
+
             self.code_transcript+=write_code_for_analysis+'\n-----------------------------------------\n'
         print(self.code_transcript)
         return self.data, self.code_transcript
@@ -751,7 +727,6 @@ class GenerateInsights:
         Analysis Output: {self.analysis_output}
         '''
         print(self.safety_setting)
-        # print(insight_prompt)
         insight_choice = generate_response(insight_prompt, 0.2, self.safety_setting)
         return insight_choice
 
@@ -852,22 +827,11 @@ class GenerateInsights:
                     break
 
                 except Exception as e:
-                    error_message = f'''
-                        Code: {vis_code}
-                        Traceback of the code: {traceback.format_exc()}
-
-                        Adhere to below instructions at all costs!
-                        Instruction:
-                        1. Identify the cause of the error and rewrite the code - make it error free
-                        2. Don't include any text in your response
-                        3. Rewrite the code as a function
-                        4. Follow these instructions by all means
-                        '''
                     temperature += 0.2
-                    vis_code = generate_response(error_message, temperature, self.safety_setting)
+                    vis_code = auto_debugger(vis_code, temperature, self.safety_setting)
                 count+=1
             print(self.code_transcript)
-            img = Image.open(f'{image_name}.png')
+            img = Image.open(f'{self.analysis_file}.png')
             insights = self.understand_image(img)
             print(insights)
             self.code_transcript += vis_code+'\n-----------------------------------------\n'
@@ -884,7 +848,7 @@ class GenerateInsights:
 
             insights = generate_response(textual_insight, 0.5, self.safety_setting)
             print(insights)
-        return self.code_transcript, image_name, insights
+        return self.code_transcript, self.analysis_file, insights
 
 class VyuEngine:
     def __init__(self, job):
@@ -966,3 +930,4 @@ html_file = job.output_img+'.html'
 
 # Fatal Police shooting data
 # How many incidents in the city of Evans? 
+# Top 3 cities with most scenes of fatal incidents
