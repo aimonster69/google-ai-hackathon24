@@ -642,17 +642,11 @@ class Analysis:
         return self.data
     
     def perform_analysis(self):
-        # try:
-        #     files = ['viz.png', 'viz.html', 'analysis_result.csv']
-        #     for file in files:
-        #         os.remove(file)
-        # except:
-        #     pass
 
         # Perform analysis - 
         print(self.my_analysis)
         write_code_for_analysis = ''
-        count, temperature = 0, 0.5
+        count, temperature = 0, 0
         while count<2:
             try:
                 query = f'''
@@ -661,7 +655,7 @@ class Analysis:
                 at all costs!.
 
                 Instructions:
-                1. Write code in python to execute the analysis - at all costs
+                1. Write code in python to execute the analysis - at all costs.
                 2. Assume a dataframe with the name "self.data" already exists.
                 3. Dataframe df has the following columns: {self.data.columns}. Use the column names for your refernece while generating the code.
                 4. Don't include the code to read the file. Write the code assuming the dataframe already exists.
@@ -670,16 +664,16 @@ class Analysis:
                 7. Dataframe should have {self.data.columns} as its columns only.
                 8. Don't write code to train any machine learning model. Write code only to perform the analysis
                 9. Aggregate/Group the dataframe "self.data" to get the desired result for Analysis by all means!
-                10. Write code only the way shown below. And call the damn function analysis()
+                10. Write code only the way shown below. And call the function analysis() by all means!
 
-                Expected output:
-                def analysis(self.data):
+                Expected output - I need output in the similar fashion only!
+                def self.analysis(self.data):
                     # Some Logic
 
                     return some_value
 
                 # Calling the function
-                data = analysis(data)
+                self.data = self.analysis(self.data)
                 '''
                 data = self.data
                 if count==0:
@@ -688,10 +682,12 @@ class Analysis:
                 write_code_for_analysis = write_code_for_analysis.replace('`','')
                 d = {}
                 if 'data = analysis(data)' not in write_code_for_analysis:
-                    function_call = '\ndata = analysis(data)'
+                    function_call = '\nself.data = analysis(self.data)'
                     write_code_for_analysis += write_code_for_analysis+function_call
+                print(write_code_for_analysis)
                 d['write_code_for_analysis'] = write_code_for_analysis
-                d['data'] = data
+                d['self.data'] = self.data
+                # d['analysis(data)'] = analysis(data)
                 exec(write_code_for_analysis, d)
                 # self.data = analysis(self.data)
                 self.data = data
@@ -897,36 +893,38 @@ class VyuEngine:
         data.to_json(analysis_file_name, orient="index")
 
         # Generating Insights
+        with open(f'{analysis_file_name}.json', 'r') as f:
+            data = json.load(f)
         gen_insights = GenerateInsights(my_analysis, data, analysis_file_name, safety_setting, code_transcript)
         code_transcript, image_name, insights = gen_insights.generate_insights(self.job.table_description)
         print('Execution Time: (in mins)',(time.time()-start)/60)
         
-        self.job.output_csv = analysis_file_name
+        self.job.output_file_name = analysis_file_name
         self.job.output_insights = insights
-        self.job.output_img = image_name
         return self.job
 
 class Job:
-    def __init__(self, input_prompt, data_url, table_description, output_insights, output_csv, output_img):
+    def __init__(self, input_prompt, data_url, table_description, output_insights, output_file_name):
         self.input_prompt = input_prompt
-        self.data_url =data_url
+        self.data_url = data_url
         self.table_description = table_description
         self.output_insights =output_insights
-        self.output_csv = output_csv
-        self.output_img = output_img
+        self.output_file_name = output_file_name
 
 data_url = 'data/police_shooting/fatal_police_shooting.csv'
 table_description = input('Table Description: ')
 input_prompt = input('Type your analysis here: ')
 
-output_insights, output_csv, output_img = '', '', ''
-job = Job(input_prompt, data_url, table_description, output_insights, output_csv, output_img)
+output_insights, output_file_name = '', ''
+job = Job(input_prompt, data_url, table_description, output_insights, output_file_name)
 
 vyu = VyuEngine(job)
 job = vyu.start_engine()
-print(job.output_img)
-png_file = job.output_img+'.png'
-html_file = job.output_img+'.html'
+print(job.output_file_name)
+png_file = job.output_file_name+'.png'
+html_file = job.output_file_name+'.html'
+# os.delete(f'{job.output_file_name}.json')
+
 
 # Fatal Police shooting data
 # How many incidents in the city of Evans? 
