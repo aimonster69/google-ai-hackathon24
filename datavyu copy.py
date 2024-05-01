@@ -805,23 +805,31 @@ class GenerateInsights:
                             # Code to plot and show the chart
                             
                             # Code to save the chart/figure with name "{self.analysis_file}.png" and "{self.analysis_file}.html"
+
+                            # Code to convert the visualization to base64 format for png string and html string of the chart and return it
+                            html_string = base64 string of visualization saved in html
+                            png_string = base64 string of visualization saved in png
+                            return html_string, png_string
                         
                         # calling the function by all means
-                        name_of_visualization(some_parameters)
+                        html_string, png_string = name_of_visualization(some_parameters)
                         '''
-                    vis_code = ''
+                    vis_code, html_string, png_string = '', '', ''
                     data = self.data
                     if count==0:
                         vis_code = generate_response(visualization_prompt, temperature, self.safety_setting)
                     print(1)
                     vis_code = vis_code.replace('python', '')
                     vis_code = vis_code.replace('`', '')
-                    d = {}
+                    d = {'html_string': html_string, 'png_string':png_string}
                     d['vis_code'] = vis_code
                     d['data'] = data
                     exec(vis_code, d)
                     self.data = d['data']
                     print('Executed')
+                    # print(d['html_string'])
+                    # print(d['png_string'])
+                    # print(d['vis_code'])
                     break
 
                 except Exception as e:
@@ -832,6 +840,7 @@ class GenerateInsights:
             img = Image.open(f'{self.analysis_file}.png')
             insights = self.understand_image(img)
             print(insights)
+
             self.code_transcript += d['vis_code']+'\n-----------------------------------------\n'
 
         if insight_choice=='Text':
@@ -847,7 +856,7 @@ class GenerateInsights:
 
             insights = generate_response(textual_insight, 0.5, self.safety_setting)
             print(insights)
-        return self.code_transcript, self.analysis_file, insights
+        return self.code_transcript, insights, d['html_string'], d['png_string']
 
 class VyuEngine:
     def __init__(self, job):
@@ -895,11 +904,10 @@ class VyuEngine:
         analysis_file_name = str(pd.Timestamp.now()).replace(' ', '')
         data.to_json(analysis_file_name+'.json', orient="index")
 
-        # Generating Insights
-        # with open(f'{analysis_file_name}', 'r') as f:
-        #     data = json.load(f)
         gen_insights = GenerateInsights(my_analysis, data, analysis_file_name, safety_setting, code_transcript)
-        code_transcript, image_name, insights = gen_insights.generate_insights(self.job.table_description)
+        code_transcript, insights, html_string, png_string = gen_insights.generate_insights(self.job.table_description)
+        print(html_string)
+        print(png_string)
         print('Execution Time: (in mins)',(time.time()-start)/60)
         
         self.job.output_file_name = analysis_file_name
@@ -911,7 +919,7 @@ class Job:
         self.input_prompt = input_prompt
         self.data_url = data_url
         self.table_description = table_description
-        self.output_insights =output_insights
+        self.output_insights = output_insights
         self.output_file_name = output_file_name
 
 data_url = 'data/restaurant_sales/Balaji Fast Food Sales.csv'
@@ -927,9 +935,9 @@ print(job.output_file_name)
 png_file = job.output_file_name+'.png'
 html_file = job.output_file_name+'.html'
 if input('Press Y to delete the files:')=='Y':
-    os.remove(f'{job.output_file_name}.json')
-    os.remove(f'{job.output_file_name}.html')
-    os.remove(f'{job.output_file_name}.png')
+    os.delete(f'{job.output_file_name}.json')
+    os.delete(f'{job.output_file_name}.html')
+    os.delete(f'{job.output_file_name}.png')
 
 # Fatal Police shooting data
 # How many incidents in the city of Evans?
