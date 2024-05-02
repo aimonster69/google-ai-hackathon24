@@ -751,10 +751,11 @@ class GenerateInsights:
     def generate_insights(self, table_description):
         insight_choice = self.insight_type_identification()
         if insight_choice=='Visualization':
-            count, temperature = 0, 0.2
+            count, temperature = 0, 0
             # vis_code = ''
             while count<2:
                 try:
+                    print(self.data)
                     visualization_prompt = f'''
                         Information - 
                         Table: {table_description}
@@ -785,12 +786,12 @@ class GenerateInsights:
                         6. Visualizing distribution of continous data: Histogram (Geographic) or Choropleth
                         7. Exploration of frequent/common terms in text data: Word cloud
 
-                        Follow the instructions by all means.
-                        Instructions -
+                        Follow the INSTRUCTIONS by all means.
+                        INSTRUCTIONS -
                         0. Based on the info available above identify what type of chart would suit the best to convey the insights for "{self.my_analysis}" - consider readability of the chart as well.
                         1. Write code in python to perform an insightful visualization from the output shared to plot it - call the function at costs. Don't write any other text. Just code.
-                        2. Make a new dataframe which has the following data: {self.analysis_output} and columns: {self.data.columns} from '{self.analysis_file}.json'
-                        3. Don't generate your own data. Don't equate visualization with "self.data" variable at any cost.
+                        2. Make a new dataframe which has the following data: {self.analysis_output} from '{self.analysis_file}.csv'
+                        3. Don't generate your own data. Don't equate visualization with "self.data" or "data" variable at any cost
                         4. Visualization should have title, axis labels, legend etc.
                         5. Save the visualization with the name '{self.analysis_file}.png' and '{self.analysis_file}.html' as well at all costs in the function itself.
                         6. Always show x axis labels with a rotation of 90 degrees if the number of labels are more than 8 else 60 degrees by all means.
@@ -798,44 +799,45 @@ class GenerateInsights:
                         8. Refer Code trascript: {self.code_transcript} to write an error free code.
                         9. If number of entities/rows representing are more then plot only the first/top 10 rows (and mention it in the graph that you have done it)
 
-                        Expected output:
-                        def name_of_visualization(some_parameters):
+                        EXPECTED OUTPUT:
+                        def data_visualization(data):
                             # Some Logic
 
-                            # Code to plot and show the chart
-                            
-                            # Code to save the chart/figure with name "{self.analysis_file}.png" and "{self.analysis_file}.html"
+                            # Write code to plot and show the chart
+                            fig = plotting the chart based on INSTRUCTIONS shared above
 
-                            # Code to convert the visualization to base64 format for png string and html string of the chart and return it
+                            # Write code to save the chart/figure with name "{self.analysis_file}.png" and "{self.analysis_file}.html"
+                            Saving the image in "{self.analysis_file}.png" and "{self.analysis_file}.html" based on INSTRUCTIONS shared above
+
+                            # Write code to convert the visualization to base64 format for png string and html string of the chart and return it
                             html_string = base64 string of visualization saved in html
                             png_string = base64 string of visualization saved in png
                             return html_string, png_string
                         
-                        # calling the function by all means
-                        html_string, png_string = name_of_visualization(some_parameters)
+                        # Write code to call the function by all means
+                        html_string, png_string = data_visualization(data)
                         '''
                     vis_code, html_string, png_string = '', '', ''
-                    data = self.data
                     if count==0:
                         vis_code = generate_response(visualization_prompt, temperature, self.safety_setting)
-                    print(1)
                     vis_code = vis_code.replace('python', '')
                     vis_code = vis_code.replace('`', '')
+                    if 'html_string, png_string = data_visualization(data)' not in vis_code:
+                        vis_code += '\nhtml_string, png_string = data_visualization(data)'
                     d = {'html_string': html_string, 'png_string':png_string}
                     d['vis_code'] = vis_code
-                    d['data'] = data
+                    d['data'] = self.data
+                    print(d['vis_code'])
                     exec(vis_code, d)
-                    self.data = d['data']
                     print('Executed')
-                    # print(d['html_string'])
-                    # print(d['png_string'])
-                    # print(d['vis_code'])
+                    if d['html_string'] and d['png_string']!='':
+                        print('Not null')
                     break
 
                 except Exception as e:
                     temperature += 0.2
                     vis_code = auto_debugger(vis_code, temperature, self.safety_setting)
-                count+=1
+                    count+=1
             print(self.code_transcript)
             img = Image.open(f'{self.analysis_file}.png')
             insights = self.understand_image(img)
@@ -845,14 +847,14 @@ class GenerateInsights:
 
         if insight_choice=='Text':
             textual_insight = f'''
-                                Action: Read the analysis output of {self.my_analysis} carefully: {self.analysis_output}
+                            Action: Read the analysis output of {self.my_analysis} carefully: {self.analysis_output}
 
-                                Instructions:
-                                1. Share the results and give concrete and crisp actionable or interesting insights based on the analysis output - if there are any.
-                                2. Tone: Professional
-                                3. Talk always in terms of numbers/figures or percentages
-                                4. Don't generate data/insights of your own at any cost.
-                                5. Provide only the insights that are required.'''
+                            Instructions:
+                            1. Share the results and give concrete and crisp actionable or interesting insights based on the analysis output - if there are any.
+                            2. Tone: Professional
+                            3. Talk always in terms of numbers/figures or percentages
+                            4. Don't generate data/insights of your own at any cost.
+                            5. Provide only the insights that are required.'''
 
             insights = generate_response(textual_insight, 0.5, self.safety_setting)
             print(insights)
@@ -903,6 +905,7 @@ class VyuEngine:
         data, code_transcript = anal_obj.perform_analysis()
         analysis_file_name = str(pd.Timestamp.now()).replace(' ', '')
         data.to_json(analysis_file_name+'.json', orient="index")
+        data.to_csv(analysis_file_name+'.csv', index=False)
 
         gen_insights = GenerateInsights(my_analysis, data, analysis_file_name, safety_setting, code_transcript)
         code_transcript, insights, html_string, png_string = gen_insights.generate_insights(self.job.table_description)
@@ -934,10 +937,11 @@ job = vyu.start_engine()
 print(job.output_file_name)
 png_file = job.output_file_name+'.png'
 html_file = job.output_file_name+'.html'
-if input('Press Y to delete the files:')=='Y':
-    os.delete(f'{job.output_file_name}.json')
-    os.delete(f'{job.output_file_name}.html')
-    os.delete(f'{job.output_file_name}.png')
+time.sleep(5)
+# if input('Press Y to delete the files:')=='Y':
+os.remove(f'{job.output_file_name}.json')
+os.remove(f'{job.output_file_name}.html')
+os.remove(f'{job.output_file_name}.png')
 
 # Fatal Police shooting data
 # How many incidents in the city of Evans?
