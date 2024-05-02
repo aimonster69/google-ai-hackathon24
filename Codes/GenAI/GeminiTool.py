@@ -13,6 +13,7 @@ import nltk
 from PIL import Image
 import time
 from itertools import permutations
+import execjs
 
 
 start = time.time()
@@ -578,7 +579,6 @@ class GeminiAnalyzer:
 
 
     def PerformAnalysis(self):
-        
         # Removing existing files:
         try:
             files = ['viz.png', 'viz.html', 'analysis_result.csv']
@@ -598,36 +598,36 @@ class GeminiAnalyzer:
                 Remember: Analysis is always some type of aggregation or group of certain columns to get the desired result.
 
                 Instructions:
-                1. Write a function in python to execute the task and call the function to execute the code - at all costs
-                2. Assume a json data with the name "data" is input as a parameter and converted into a dataframe.
-                3. Dataframe df has the following columns: {self.dv.data.columns}. Use the column names for your refernece while generating the code.
-                4. Don't include the code to read the file. Write the code assuming the dataframe already exists.
+                1. Write a function in javascript to execute the task and call the function to execute the code - at all costs
+                2. Assume a json data as an input for the rows of the data.
+                3. JSON has the following columns: {self.dv.data.columns} as keys. Use the column names for your refernece while generating the code.
+                4. Code should not be in python, it should only be in JavaScript.
                 5. Don't generate your own data. 
-                6. First 5 rows of the dataframe you will work on: {self.dv.data.head(5)}
-                7. Dataframe should have {self.dv.data.columns} as its columns only.
+                6. First 5 rows of the input data you will work on: {self.dv.data.head(5)}
+                7. JSON should has following keys are {self.dv.data.columns} as its columns only.
                 8. Don't write code to train any machine learning model. Write code only to perform the analysis
-                9. Save the output of the analysis a csv file: 'analysis_result.csv' at all costs!
+                9. Save the output of the analysis into a json object
                 10. Write code only the way shown below.
 
                 Expected output:
-                def some_function_name():
-                    # Some Logic
-k
-                    return some_value
-
-                data = some_function_name()
+                function AnalysisJS(rows) 
+                    #Somelogic
+                    return output
                 '''
                 if count==0:
                     write_code_for_analysis = self.generate_response(query, temperature, self.dv.safety_setting)
-                write_code_for_analysis = write_code_for_analysis.replace('python', '')
+                write_code_for_analysis = write_code_for_analysis.replace('javascript', '')
                 write_code_for_analysis = write_code_for_analysis.replace('`','')
-                exec(write_code_for_analysis)
+                #js = js2py.eval_js(write_code_for_analysis)
+                #print(js)  # Output: 24 (assuming conversion to Python int)
+                result = execjs.eval(write_code_for_analysis)
+                print("Result of JavaScript code:", result)
                 break
             except Exception as e:
                 error_message = f'''
                     Code:
                     {write_code_for_analysis}
-                    Traceback of the code: {traceback.format_exc()}
+                    
 
                     Adhere to below instructions at all costs!
                     Instruction:
@@ -639,10 +639,11 @@ k
                 temperature += 0.2
                 write_code_for_analysis = self.generate_response(error_message, 0.5, self.dv.safety_setting)
                 count+=1
-                
-            #self.dv.code_transcript += write_code_for_analysis + '\n-----------------------------------------\n'
-            print(write_code_for_analysis)
-            return write_code_for_analysis
+        print(write_code_for_analysis)
+        return write_code_for_analysis
+
+
+        
 
 
     def InsightTypeIdentification(self):

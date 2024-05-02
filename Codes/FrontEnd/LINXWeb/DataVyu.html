@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    <title>File Upload Page</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.0/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="FormArea">
+            <header>
+                <img src="./Logo.png" alt="Logo" class="logo">
+            </header>
+
+            <div class="background">
+                <div class="upload-area" id="uploadArea">
+                    <p>Drop your file here or <span id="browseFiles"><u>browse</u></span></p>
+                    <input type="file" id="fileInput" accept=".csv, .xlsx" hidden>
+                </div>
+
+                <div class="form">
+                    <input type="text" id="textInput1" placeholder="Write table description">
+                    <input type="text" id="textInput2" placeholder="Analysis you want">
+                    <button id="submitButton">Analyze</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="Card" class="Card">
+        <div class="CloseBtn" onclick="HideCard()">X</div>
+        <h1>Your Analysis</h1>
+        <h5>Generating Insights... Please wait for few minutes</h5>
+        <div id="TableView">
+            <h4>Sample Data</h4>
+            <table id="bodyRows">
+
+            </table>
+        </div>
+        <div class="LoadingArea">
+            <div id="Loading">
+
+            </div>
+        </div>
+        <div class="Insight">
+            <div class="Heading">
+                <h4>Insights</h4>
+            </div>
+            <div class="InsightPoints">
+
+            </div>
+            <div class="InsightGraph">
+
+            </div>
+            <div class="Table">
+
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

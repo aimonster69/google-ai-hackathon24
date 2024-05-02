@@ -55,16 +55,8 @@ function ProcessExcelFile(title, dataurl, prompt, columns, rows){
             const od = JSON.parse(xhr.response);
             console.log(od.message[0].replace("`", "").replace("python", ""));
 
-            var pythonCode = od.message[0].replace("`", "").replace("python", "");
-            var data = rows;
-            var pythonOutput = '';
-            skulpt.configure({
-                output: function(text) {
-                    pythonOutput += text;
-                }
-            });
-            skulpt.run(pythonCode);
-            console.log("Python output:", pythonOutput);
+            var JSCode = od.message[0].replace("`", "").replace("python", "");
+            ExecuteJS(JSCode, rows);
 
         } else {
             // Request failed
@@ -94,56 +86,62 @@ function OnSubmit()
 {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            let columns = {};
-
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-
-                // Assuming the first sheet is the one you want to read
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-
-                // Convert sheet data to JSON
-                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                // Create HTML table
-                const tableContainer = document.getElementById('tableContainer');
-                const table = document.createElement('table');
-                const headerRow = table.insertRow();
-                const headers = jsonData[0];
-
-                columns = GetColumnsInJSON(headers);
-                const randomRows = getRandomRows(jsonData, 50);
-                const rows = JSON.stringify(randomRows, null, 2);
-                console.log(rows);
-
-                // Add headers to table
-                for (let i = 0; i < headers.length; i++) {
-                    const headerCell = document.createElement('th');
-                    headerCell.textContent = headers[i];
-                    headerRow.appendChild(headerCell);
-                }
-
-                // Add data rows to table
-                for (let i = 1; i < jsonData.length; i++) {
-                    const dataRow = table.insertRow();
-                    const rowData = jsonData[i];
-                    for (let j = 0; j < rowData.length; j++) {
-                        const cell = dataRow.insertCell();
-                        cell.textContent = rowData[j];
-                    }
-                }
-
-                // Append table to container
-                tableContainer.innerHTML = '';
-                tableContainer.appendChild(table);
-
-                Analyze("Testing", "", "Analyze the data", columns, rows);
-            };
-
-            reader.readAsArrayBuffer(file);
+            67
 
 }
+
+
+function ExecuteJS(code, rows){
+    data = rows;
+    eval(code);
+}
+
+// Function to handle file input change
+function handleFileChange(event) {
+
+    alert("Run");
+    // Get the selected file
+    const file = event.target.files[0];
+    
+    if (file) {
+        // Create a FormData object
+        const formData = new FormData();
+        
+        // Append the Excel file to the FormData object
+        formData.append('datafile', file);
+        
+        // Append two strings to the FormData object
+        formData.append('tabledescription', 'this table consist of the data of fatal police shooting');
+        formData.append('anlysisprompt', 'tell me the relations between criminals and their mental health');
+        
+        // Create a new XMLHttpRequest object
+        const xhr = new XMLHttpRequest();
+        
+        // Configure the request to send a POST request to the server
+        xhr.open('POST', 'http://127.0.0.1:5000/Jobs/Add', true);
+        
+        // Set the request headers (optional)
+        // You may want to set headers depending on your server requirements
+        
+        // Callback function to handle the response from the server
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                // Handle success response
+                console.log('File and strings uploaded successfully');
+                console.log('Response:', xhr.responseText);
+            } else {
+                // Handle error response
+                console.error('Error uploading file and strings:', xhr.status, xhr.statusText);
+            }
+        };
+        
+        // Handle errors during the request
+        xhr.onerror = function() {
+            console.error('Network error occurred while uploading the file and strings');
+        };
+        
+        // Send the FormData object with the file and strings
+        xhr.send(formData);
+    }
+}
+document.getElementById('fileInput').addEventListener('change', handleFileChange);

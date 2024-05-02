@@ -2,14 +2,18 @@ import time
 import papermill as pm
 import os
 
+import json
+
+
 from GenAI.GeminiTool import GeminiAnalyzer, DataValues
+from GenAI.datavyu import VyuEngine
 
 class DataAnalysis:
 
     def __init__(self, job): #Getting job object here 
         self.job = job
-        self.dv = DataValues(job)
-        self.geminitool = GeminiAnalyzer(self.dv, "../GenAI/Credentials.json")
+        #self.dv = DataValues(job)
+        #self.geminitool = GeminiAnalyzer(self.dv, "../GenAI/Credentials.json")
 
     def GOIT(self):
         # Path to your IPython Notebook file
@@ -37,18 +41,22 @@ class DataAnalysis:
         # print("This Jobs is your now")
         # time.sleep(1)
         
-        self.geminitool.CreateDictionary()
-        self.geminitool.SetSafetySetting()
-        self.geminitool.ExtractColumns()
-        self.geminitool.ColumnsToWorkOn()
-        self.geminitool.TemplateCheck()
-        self.geminitool.PreProcess()
-        self.geminitool.CheckProcessSteps()
-        self.geminitool.PerformStep()
-        code = self.geminitool.PerformAnalysis()
-        
+        # self.geminitool.CreateDictionary()
+        # self.geminitool.SetSafetySetting()
+        # self.geminitool.ExtractColumns()
+        # self.geminitool.ColumnsToWorkOn()
+        # self.geminitool.TemplateCheck()
+        # self.geminitool.PreProcess()
+        # self.geminitool.CheckProcessSteps()
+        # self.geminitool.PerformStep()
+        # code = self.geminitool.PerformAnalysis()
 
+        print("RIM")
+        ve = VyuEngine(job)
+        job = ve.start_engine()
+        print("MIR")
+        
         # self.GOIT()
 
-        return code
+        return job
     

@@ -1,0 +1,221 @@
+/* Basic Styles */
+body {
+    background-image: url('./Wow.png');
+    background-position: center;
+    background-size: cover;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #ffffff; /* White background */
+}
+
+.container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    overflow: auto; 
+    flex-direction: row;
+}
+
+
+.FormArea{
+    width: 50vw;
+    height: 70vh;
+    background-color: #ffffffc8;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    overflow: auto; 
+    flex-direction: column;
+    border-radius: 10px;
+    animation: fadeIn 2s ease-in-out; 
+}
+
+
+.logo {
+    width: 100px;
+    margin-bottom: 20px;
+    background-color: #b7b7b7a9;
+    border-radius: 5px;
+}
+
+.animated-text {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #000000; /* Black text */
+}
+
+.upload-area {
+    border: 2px dashed #0072ff; /* Blue border */
+    padding: 20px;
+    text-align: center;
+    width: 300px;
+    margin-bottom: 20px;
+}
+
+.upload-area p {
+    color: #000000; /* Black text */
+}
+
+.form {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    overflow: auto; 
+    flex-direction: column;
+    gap: 10px;
+}
+
+input, button {
+    padding: 10px;
+    border: 2px solid #0072ff; /* Blue border */
+    border-radius: 5px;
+    width: 90%;
+}
+
+button {
+    background-color: #0072ff; /* Blue background */
+    color: #ffffff; /* White text */
+    cursor: pointer;
+    width: 60%;
+}
+
+button:hover {
+    background-color: #004ba0; /* Darker blue on hover */
+}
+
+.Card{
+    position: absolute;
+    /* margin: 2%; */
+    left: 2%; right: 2%; bottom: 2%; top: 2%;
+    background-color: white;
+    border-radius: 5px;
+    animation: BottomToUp 1s ease-in-out; 
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    overflow: hidden;
+    overflow-y: auto; 
+    flex-direction: column;
+    display: none;
+    padding: 2%;
+}
+
+.Card #TableView{
+    width: 90vw;
+    height: 30vh;
+    border-radius: 10px;
+    overflow: auto;
+    border-radius: 10px;
+    padding: 2%;
+    border: 2 solid black;
+    background-color: whitesmoke;
+}
+
+.Card #TableView headerRow{
+    background-color: black;
+}
+
+.Card #TableView th{
+    color: white;
+    font-weight: bold;
+    background-color: black;
+    text-transform: capitalize;
+    border: none;
+    padding: 0.5%;
+    font-size: 8pt;
+    min-width: 200px;
+}
+
+.Card #TableView td{
+    padding: 0.5%;
+    font-size: 7pt;
+    min-width: 200px;
+}
+
+.Card #TableView tr:nth-child(even) {
+    background-color: #e7e7e7;
+  }
+
+.Card .LoadingArea{
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    overflow: hidden;
+    overflow-y: auto; 
+    flex-direction: column;
+}
+
+.Card .CloseBtn{
+    position: absolute;
+    right: 2%;
+    top: 2%;
+    cursor: pointer;
+    color: black;
+}
+
+.Card .LoadingArea #Loading{
+    background-image: url("https://cdn.pixabay.com/animation/2023/10/08/03/19/03-19-26-213_512.gif");
+    background-position: center;
+    background-size: contain;
+    width: 50px;
+    height: 50px;
+}
+
+.Insight{
+    width: 90vw;
+    margin: 2%;
+    padding: 1%;
+    border-radius: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    overflow: hidden;
+    overflow-y: auto; 
+    flex-direction: column;
+    display: none;
+}
+
+.Insight .Heading{
+    width: 100%;
+    height: 20%;
+}
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+    .upload-area, .form {
+        width: 100%;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes BottomToUp {
+    from {
+        transform: translateY(100%);
+    }
+    to{
+        transform: translate(0%);
+    }
+}

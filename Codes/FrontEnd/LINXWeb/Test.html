@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pandas in JavaScript</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.18.1/full/pyodide.js"></script>
+    <script type="module">
+
+        // Wait for Pyodide to load
+        languagePluginLoader.then(() => {
+            console.log("Pyodide is ready!");
+            
+            // Import Pandas
+            pyodide.loadPackage(['pandas']).then(() => {
+                console.log("Pandas is imported!");
+
+                // Execute Python code
+                pyodide.runPython(`
+                    import pandas as pd
+
+                    # Create a DataFrame
+                    data = {'Name': ['Alice', 'Bob', 'Charlie'],
+                            'Age': [25, 30, 35]}
+                    df = pd.DataFrame(data)
+
+                    # Print the DataFrame
+                    print(df)
+                `);
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Pandas in JavaScript</h1>
+    <div id="output"></div>
+</body>
+</html>

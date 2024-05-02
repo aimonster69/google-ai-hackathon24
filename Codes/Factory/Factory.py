@@ -15,13 +15,15 @@ class Job:
         self.Prompt = []
         self.Columns = []
         self.Rows = []
+        self.TableDescription = []
         self.Extension = []
+        self.OutputFiles = []
         self.Response = []
         self.Images = []
         self.Codes = []
         self.Executed = False
         self.Status = "Running"
-
+    
     def GetJobID(self):
         return self.JobID
     
@@ -40,14 +42,13 @@ class Job:
     def Run(self, job):
         self.Executed = True
         dataAnalysis = DataAnalysis(job)
-        print("SA")
         output = dataAnalysis.Execute()
         self.Response.append(output)
         self.Status = "Completed"
         print("SB")
 
 
-class Jobs:
+class Jobs: 
     Jobs = []
     ExecutedJobs = []
 
@@ -77,11 +78,11 @@ class AnalysisMachine(threading.Thread):
             else:
                 count += 1
             
-            if count >= 10:
+            if count >= 10000:
                 break        
             
             time.sleep(3)
-            print("Cold Run" + str(count))
+            #print("Cold Run" + str(count))
 
         
     
