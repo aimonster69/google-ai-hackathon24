@@ -65,7 +65,7 @@ try:
     while(job.Status == "Running"):
       count += 1
       #print("Waiting " + str(count))
-    return jsonify({'message': job.Response}), 201
+    return jsonify({'Response': job.Response, 'Images': job.Images, 'OutputFiles': job.OutputFiles, 'Codes': job.Codes, 'Status': job.Status}), 201
 
 except Exception as e:
   #print(e)
